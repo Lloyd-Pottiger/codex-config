@@ -62,10 +62,10 @@ The script buffers progress and final Markdown. Poll the running command session
 
 4. After the script exits, triage the result before answering the user.
 
-- Verify each reported finding against the diff and surrounding code.
-- Drop clear false positives instead of forwarding them blindly.
-- Preserve the reviewer's priority labels when they are defensible; adjust only when the evidence clearly supports a different severity.
-- If the review reports no actionable findings, say that directly and include any residual test or validation gaps it identified.
+- Verify each reported finding and implementation concern against the diff and surrounding code.
+- Drop clear false positives and speculative redesign suggestions instead of forwarding them blindly.
+- Preserve the reviewer's priority labels for findings when they are defensible; keep implementation concerns separate unless the evidence clearly supports upgrading one into a finding.
+- If the review reports no actionable findings, say that directly and include any material implementation concerns or residual validation gaps it identified.
 
 ## Review Standard
 
@@ -75,8 +75,15 @@ The delegated reviewer is instructed to perform a production-critical review:
 - Understand the problem, intent, and solution mechanics from code, tests, docs, commit messages, and repository instructions.
 - Explain or internally account for non-obvious control flow, data flow, state changes, concurrency, and failure modes.
 - Evaluate negative impacts across correctness, security, robustness, compatibility, CPU, memory, IO/RPC behavior, logging cost, and maintainability.
-- Report only discrete, actionable issues that the author would likely fix.
+- Evaluate implementation shape: whether abstractions pay for themselves, whether a simpler local design exists, and whether the diff adds avoidable common-case cost. Prefer `delete > reuse > merge > abstract` when judging alternatives.
+- Report only discrete, actionable issues or material implementation concerns that the author would likely fix.
 - Prefer no findings over speculative findings.
+
+## Implementation Concerns
+
+- Keep implementation concerns separate from priority-labeled findings unless they rise to a concrete correctness, performance, security, or operational problem.
+- Report them only when the change introduced or materially worsened unnecessary abstraction, duplication, state, API surface, or hot-path overhead, and a simpler or cheaper local alternative is clear.
+- Do not forward subjective rewrites or "maybe cleaner" redesign ideas.
 
 ## Priority Labels
 

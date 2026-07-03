@@ -136,12 +136,13 @@ Do this work before producing the final review:
 2. Understand the problem and intent from the request, commit messages, PR text if available, tests, docs, and surrounding code.
 3. Walk through each non-obvious logic change: control flow, data flow, state changes, concurrency, IO/RPC behavior, ownership/lifetime, and failure modes as applicable.
 4. Evaluate negative impacts across correctness, security, robustness, compatibility, CPU, memory, IO/RPC volume, logging cost, observability cost, and maintainability.
-5. Check whether changed behavior violates repository instructions such as AGENTS.md or documented engineering rules.
-6. Validate every potential finding against the diff and surrounding code. A finding must be discrete, actionable, and supported by a concrete scenario.
+5. Evaluate implementation shape separately from correctness: whether new abstractions pay for themselves, whether the code introduces avoidable state or API surface, whether existing helpers or types should have been reused, whether a simpler local implementation exists, and whether the diff adds avoidable common-case cost. Prefer delete > reuse > merge > abstract when comparing alternatives.
+6. Check whether changed behavior violates repository instructions such as AGENTS.md or documented engineering rules.
+7. Validate every potential finding or implementation concern against the diff and surrounding code. It must be discrete, actionable, and supported by a concrete scenario or concrete cost.
 
 ## What to flag
 
-Flag an issue only when all of these are true:
+Flag a finding only when all of these are true:
 
 1. It meaningfully impacts correctness, performance, security, robustness, compatibility, operations, or maintainability.
 2. It was introduced by, exposed by, or made materially worse by the reviewed change.
@@ -152,6 +153,15 @@ Flag an issue only when all of these are true:
 7. It is not simply an intentional behavior change.
 
 Do not flag trivial style issues unless they obscure meaning or violate documented standards. Prefer no findings over speculative findings.
+
+Report an implementation concern only when all of these are true:
+
+1. The reviewed change introduced or materially worsened unnecessary abstraction, duplication, state, parameter/API sprawl, comment noise, or common-case overhead.
+2. The concern can be tied to a concrete maintenance or performance cost, not just a subjective preference.
+3. A simpler or cheaper local alternative is clear from the surrounding codebase, such as deleting code, reusing an existing helper/type, merging duplicate paths, or removing avoidable work.
+4. The recommendation does not depend on redesigning unrelated modules or assuming unstated future requirements.
+
+Do not report "could be cleaner" or "might be more elegant" suggestions without a concrete local payoff.
 
 ## Finding comments
 
@@ -171,6 +181,16 @@ Priority labels:
 - [P2] Normal. Should be fixed eventually.
 - [P3] Low. Nice to have.
 
+## Implementation concern comments
+
+For each implementation concern:
+
+- Start the title with "[Impl]" and cite the file and line, function, or symbol.
+- Name the concrete cost: unnecessary abstraction, duplicate logic, redundant state, parameter/API sprawl, comment noise, extra allocation/copy, repeated parsing/lookups, hot-path branching, lock scope, or unnecessary IO/RPC work.
+- Explain why the current shape does not pay for itself in this codebase.
+- Point to the simpler local alternative when it is visible.
+- Keep it concise and do not escalate it into a finding unless it also meets the finding bar above.
+
 ## Output format
 
 Start with findings.
@@ -183,6 +203,11 @@ If there are actionable findings:
   One concise paragraph explaining the scenario and impact.
 
 Then include these sections when useful:
+
+### Implementation Concerns
+
+- [Impl] Title - file:line
+  One concise paragraph describing the concrete cost and the simpler local alternative.
 
 ### Change Intent And Mechanics
 
@@ -201,6 +226,10 @@ If there are no actionable findings:
 ### Findings
 
 No actionable findings.
+
+### Implementation Concerns
+
+List only material implementation concerns. If none, say "No material implementation concerns."
 
 ### Residual Risk / Validation Gaps
 
