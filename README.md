@@ -37,6 +37,11 @@ It is opinionated about a few recurring Codex failure modes:
   tightened to also look for material implementation concerns such as
   over-abstraction, duplicate state, unnecessary API surface, and avoidable
   common-case cost.
+- Actions that trust conversation memory over repository state: Codex may write
+  commit messages, summaries, reviews, or cleanup decisions that describe only
+  the changes from the current session rather than the full observable diff.
+  This profile tells agents to rediscover scope from repository state before any
+  action that summarizes, commits, reviews, validates, or cleans up changes.
 - Comments and docs that record patch history: this profile prefers comments
   that explain invariants, rationale, interfaces, and non-obvious behavior,
   rather than narrating what was tried or intentionally not done.

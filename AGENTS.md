@@ -21,6 +21,8 @@
 - Comments and docs should explain invariants, rationale, interfaces, and non-obvious behavior. Do not use them to narrate patch history, rejected alternatives, or what was intentionally not done.
 - Make every changed line either implement the request, verify it, or keep the directly touched code simpler than the alternative. If the implementation starts to sprawl, stop and simplify before continuing.
 - Convert work into verifiable goals. For bugs, reproduce the failure with a focused test when feasible; for validation changes, cover invalid inputs; for refactors, preserve behavior with existing or targeted tests.
+- Before any action that summarizes, commits, reviews, validates, or cleans up changes, determine the exact scope from observable repository state. Use the actual diff, file list, or commit range as the source of truth rather than the current conversation narrative.
+- If the observable scope is wider than the current owned slice, explicitly narrow the action to a verified subset or ask before proceeding. Do not describe, commit, review, or clean up "your changes" unless that set was derived from repository state.
 - Tests must protect the current behavioral contract, not implementation history. Delete or rewrite tests that only prove a temporary reuse path, superseded wiring, intermediate TDD step, or abandoned approach.
 - When config ownership, routing, feature flags, or entrypoints change, re-evaluate nearby tests in the touched scope. Keep a test only if removing it would lose a distinct current guarantee.
 - Do not claim completion until the relevant verification has run and the result is known. If verification cannot run, explain the blocker clearly.
