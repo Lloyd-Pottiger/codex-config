@@ -3,7 +3,7 @@ description = "Use when the parent agent needs help choosing subagents and divid
 model_reasoning_effort = "xhigh"
 sandbox_mode = "read-only"
 developer_instructions = """
-Own subagent organization as task-boundary design for high-throughput, low-conflict execution.
+Design task boundaries for delegation: one clear purpose per thread, minimal overlap, low conflict.
 
 Optimize delegation so each thread has one clear purpose, predictable output, and minimal overlap with other threads.
 
@@ -26,10 +26,9 @@ Focus on:
 - prompt specificity needed for bounded, high-signal subagent output
 - fallback plan if one thread returns uncertain or conflicting results
 
-Do not recommend collapsing write work into the parent agent merely to avoid
-runner control-flow conflicts. Use parent-only writes only when the work is
-tightly coupled, cannot be split into non-overlapping ownership, or is the
-immediate critical-path task.
+Do not collapse write work into the parent agent just to avoid orchestrating
+concurrent writers. Keep writes in the parent only when the work is tightly
+coupled, cannot be split into non-overlapping ownership, or is on the critical path.
 
 Quality checks:
 - verify each delegated task is concrete, bounded, and materially useful

@@ -9,22 +9,7 @@ Surface architectural friction and propose **deepening opportunities** — refac
 
 ## Glossary
 
-Use these terms exactly in every suggestion. Consistent language is the point — don't drift into "component," "service," "API," or "boundary." This skill reuses the shared deep-module vocabulary defined in the [`codebase-design`](../codebase-design) skill; full definitions live in [LANGUAGE.md](../codebase-design/LANGUAGE.md).
-
-- **Module** — anything with an interface and an implementation (function, class, package, slice).
-- **Interface** — everything a caller must know to use the module: types, invariants, error modes, ordering, config. Not just the type signature.
-- **Implementation** — the code inside.
-- **Depth** — leverage at the interface: a lot of behaviour behind a small interface. **Deep** = high leverage. **Shallow** = interface nearly as complex as the implementation.
-- **Seam** — where an interface lives; a place behaviour can be altered without editing in place. (Use this, not "boundary.")
-- **Adapter** — a concrete thing satisfying an interface at a seam.
-- **Leverage** — what callers get from depth.
-- **Locality** — what maintainers get from depth: change, bugs, knowledge concentrated in one place.
-
-Key principles (see [LANGUAGE.md](../codebase-design/LANGUAGE.md) for the full list):
-
-- **Deletion test**: imagine deleting the module. If complexity vanishes, it was a pass-through. If complexity reappears across N callers, it was earning its keep.
-- **The interface is the test surface.**
-- **One adapter = hypothetical seam. Two adapters = real seam.**
+This skill speaks the shared deep-module vocabulary from the [`codebase-design`](../codebase-design) skill. Consult [LANGUAGE.md](../codebase-design/LANGUAGE.md) for the canonical definitions of **module**, **interface**, **implementation**, **depth** (deep vs shallow), **seam**, **adapter**, **leverage**, and **locality**, and for the principles that do the work here — the deletion test, "the interface is the test surface," and "one adapter means a hypothetical seam, two means a real one." Use these terms exactly; don't drift into "component," "service," "API," or "boundary."
 
 This skill is informed by the project's domain model: `CONTEXT.md`, `CONTEXT-MAP.md`, and any ADRs under `docs/adr/`. Domain language gives names to good seams; ADRs record decisions this skill should not re-litigate.
 

@@ -1,6 +1,6 @@
 ---
 name: dispatching-parallel-agents
-description: Coordinate explicit fan-out to multiple Codex subagents, wait for them correctly, integrate their work, then optionally dispatch review agents. Use when the user explicitly requests dispatch, parallel agents, subagents, multi-agent work, fan-out, review agents, or 并发 subagents.
+description: Coordinate explicit fan-out to multiple Codex subagents, wait for them correctly, integrate their work, then optionally dispatch review agents. Use when the user explicitly requests dispatch, parallel agents, subagents, multi-agent work, fan-out, review agents, or concurrent subagents.
 ---
 
 # Dispatching Parallel Agents

@@ -49,70 +49,30 @@ Skip any step = lying, not verifying
 | Agent completed | VCS diff shows changes | Agent reports "success" |
 | Requirements met | Line-by-line checklist | Tests passing |
 
-## Red Flags - STOP
+For regression tests, verify the test can actually fail: write it → run (pass) → revert the fix → run (must fail) → restore → run (pass). A test that never went red proves nothing.
 
-- Using "should", "probably", "seems to"
-- Expressing satisfaction before verification ("Great!", "Perfect!", "Done!", etc.)
-- About to commit/push/PR without verification
-- Trusting agent success reports
-- Relying on partial verification
-- Thinking "just this once"
-- Tired and wanting work over
-- **ANY wording implying success without having run verification**
+## Stop Signals
 
-## Rationalization Prevention
+If you catch yourself thinking any of these, stop and run the verification:
 
-| Excuse | Reality |
-|--------|---------|
-| "Should work now" | RUN the verification |
-| "I'm confident" | Confidence ≠ evidence |
-| "Just this once" | No exceptions |
-| "Linter passed" | Linter ≠ compiler |
-| "Agent said success" | Verify independently |
-| "I'm tired" | Exhaustion ≠ excuse |
+| The thought | The reality |
+|---|---|
+| "Should work now" / "I'm confident" / "seems fine" | Confidence isn't evidence — run it |
+| "Just this once" / "I'm tired, skip it" | No exceptions; exhaustion isn't one |
+| "Linter passed" | Linter isn't compiler or test run |
+| "Agent reported success" | Verify independently against the diff |
 | "Partial check is enough" | Partial proves nothing |
-| "Different words so rule doesn't apply" | Spirit over letter |
-
-## Key Patterns
-
-**Tests:**
-```
-✅ [Run test command] [See: 34/34 pass] "All tests pass"
-❌ "Should pass now" / "Looks correct"
-```
-
-**Regression tests (TDD Red-Green):**
-```
-✅ Write → Run (pass) → Revert fix → Run (MUST FAIL) → Restore → Run (pass)
-❌ "I've written a regression test" (without red-green verification)
-```
-
-**Build:**
-```
-✅ [Run build] [See: exit 0] "Build passes"
-❌ "Linter passed" (linter doesn't check compilation)
-```
-
-**Requirements:**
-```
-✅ Re-read plan → Create checklist → Verify each → Report gaps or completion
-❌ "Tests pass, phase complete"
-```
-
-**Agent delegation:**
-```
-✅ Agent reports success → Check VCS diff → Verify changes → Report actual state
-❌ Trust agent report
-```
+| "Different wording, so the rule doesn't apply" | Spirit over letter |
+| About to commit/push/PR, or say "Done!" / "Great!" / "Perfect!" | No completion claim without fresh evidence |
 
 ## Why This Matters
 
-From 24 failure memories:
-- your human partner said "I don't believe you" - trust broken
-- Undefined functions shipped - would crash
-- Missing requirements shipped - incomplete features
-- Time wasted on false completion → redirect → rework
-- Violates: "Honesty is a core value. If you lie, you'll be replaced."
+Claiming completion without fresh evidence is dishonesty dressed up as efficiency, and it breaks trust quickly. The costs are concrete and recurring:
+
+- Undefined functions or missing wiring shipped as "done" — crashes and broken behavior in production.
+- Incomplete requirements shipped — features that look finished but aren't.
+- False completion forces the user to verify, redirect, and rework, wasting the exact time the shortcut claimed to save.
+- Once trust erodes, every later claim is suspect — even when it is backed by evidence.
 
 ## When To Apply
 

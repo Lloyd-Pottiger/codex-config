@@ -33,7 +33,7 @@ If no explicit preference is found, use `<parent-of-primary-repo>/<repo-name>.wo
 
 Example: if the repository is `~/projects/xx`, use `~/projects/xx.worktrees/`.
 
-If the current checkout is already a linked worktree under that root, reuse the parent worktree root. Example: if the current checkout is `~/projects/loop.worktrees/find-desttop`, create the next worktree under `~/projects/loop.worktrees/<branch>`, not under `~/projects/loop.worktrees/find-desttop.worktrees/<branch>`.
+If the current checkout is already a linked worktree under that root, reuse the parent worktree root. Example: if the current checkout is `~/projects/myproject.worktrees/feature-a`, create the next worktree under `~/projects/myproject.worktrees/<branch>`, not under `~/projects/myproject.worktrees/feature-a.worktrees/<branch>`.
 
 Use this helper to compute the default root:
 
@@ -120,32 +120,7 @@ repo_root=$(git rev-parse --show-toplevel)
 ### 2. Create Worktree
 
 ```bash
-default_worktree_root_for_repo() {
-  repo_root=$1
-  git_dir=$(git -C "$repo_root" rev-parse --path-format=absolute --git-dir)
-  git_common_dir=$(git -C "$repo_root" rev-parse --path-format=absolute --git-common-dir)
-
-  if [ "$git_dir" != "$git_common_dir" ]; then
-    current_parent=$(dirname "$repo_root")
-    case "$(basename "$current_parent")" in
-      *.worktrees)
-        printf '%s\n' "$current_parent"
-        return
-        ;;
-    esac
-
-    primary_worktree=$(
-      git -C "$repo_root" worktree list --porcelain |
-        awk '/^worktree / { sub(/^worktree /, ""); print; exit }'
-    )
-    if [ -n "$primary_worktree" ] && [ -d "$primary_worktree" ]; then
-      repo_root=$primary_worktree
-    fi
-  fi
-
-  printf '%s/%s.worktrees\n' "$(dirname "$repo_root")" "$(basename "$repo_root")"
-}
-
+# default_worktree_root_for_repo is defined above in "Default to Project-Adjacent".
 default_worktree_root=$(default_worktree_root_for_repo "$repo_root")
 project=$(basename "${default_worktree_root%.worktrees}")
 

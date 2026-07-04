@@ -1,9 +1,9 @@
 # Global Working Principles
 
-- Before proposing a design, implementation plan, or code change, read the relevant code, configuration, tests, and documentation until all important behavior, constraints, and interfaces are clear. Do not infer behavior from names alone when the code can be inspected directly.
+- Before proposing a design, plan, or change, read the relevant code, config, tests, and docs until the behavior, constraints, and interfaces are clear — inspect the code directly rather than inferring from names.
 - Prefer the simplest solution that fully solves the real problem. Avoid unnecessary abstractions, fallback layers, defensive complexity, or speculative extensibility.
 - Treat all design, implementation, and review output as production-facing work. Prioritize correctness, clarity, maintainability, and operational robustness.
-- Keep module responsibilities single-purpose, boundaries explicit, and interfaces easy to understand.
+- Keep modules single-purpose, with explicit boundaries and simple interfaces.
 - When information is still ambiguous after inspection, explicitly identify the uncertainty and resolve it before committing to a design or implementation.
 
 # Execution Discipline
@@ -13,10 +13,9 @@
 - Choose the simplest coherent end-state that fully solves the real problem, then minimize the diff needed to reach it. Do not preserve an awkward implementation just because it is already present. Do not add speculative features, fallback chains, configurability, or abstractions for single-use code.
 - Keep edits surgical, but leave the touched code coherent. Avoid unrelated cleanup, adjacent formatting churn, or opportunistic refactors outside the affected design seam.
 - Match existing style unless the local style directly causes the issue being fixed.
-- If the requested change exposes duplicated or awkward code in the same touched area, simplify it when that reduces the final diff and preserves behavior. If a local patch would otherwise preserve or add repeated special cases, awkward ownership, or duplicated logic, widen the change within the affected seam and simplify the structure instead of stacking another patch.
+- If the change exposes duplicated or awkward code in the same area, simplify it within the affected seam when that reduces the final diff and preserves behavior — don't stack a patch that preserves repeated special cases or duplicated logic.
 - If extending the current implementation would require another wrapper, branch, fallback path, bool flag, adapter, or special case for the same concern, stop and simplify or replace the local implementation instead of layering on a patch.
-- When a plan, approach, or partial implementation is replaced, remove the superseded code in the same change unless keeping it is an explicit requirement. Clean up dead helpers, branches, flags, comments, tests, imports, and state from the abandoned approach.
-- Remove imports, variables, functions, wrappers, tests, branches, or small local duplication made unused or unnecessary by your own changes.
+- When your changes make code dead — replacing an approach, or just leaving helpers, imports, branches, flags, comments, or tests unused — remove it in the same change unless keeping it is an explicit requirement.
 - Mention unrelated dead code or questionable patterns outside the affected seam instead of deleting them. If the necessary cleanup extends beyond that seam, call it out as a separate refactor instead of smuggling it into the current change.
 - Comments and docs should explain invariants, rationale, interfaces, and non-obvious behavior. Do not use them to narrate patch history, rejected alternatives, or what was intentionally not done.
 - Make every changed line either implement the request, verify it, or keep the directly touched code simpler than the alternative. If the implementation starts to sprawl, stop and simplify before continuing.
@@ -82,7 +81,7 @@ Other relevant review angles include backpressure and limits, retry and backoff 
 
 # Requirements for Implementation and Review
 
-- Before implementing from a design document, first verify the design against the current codebase and confirm that it is feasible.
+- Before implementing from a design document, verify it against the current codebase for feasibility.
 - If the design is flawed, incomplete, or inconsistent with the actual code, explicitly call out the issue and propose concrete corrections before or during implementation.
 - Implement every critical part required for the system to work according to the intended design, not just surface-level scaffolding.
 - Break work into clear modules with explicit interfaces. If the design does not define the module split precisely enough, derive a clean decomposition from the design and the codebase.

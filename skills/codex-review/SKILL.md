@@ -9,13 +9,13 @@ Launch a separate Codex reviewer through `scripts/review.js` and wait for it to 
 
 ## Synchronous Execution Rule
 
-After starting `scripts/review.js`, the active task is waiting for that process to finish.
+`scripts/review.js` is a foreground process: it runs to completion and then exits. After starting it, the active task is waiting for that exit.
 
 - Do not run a separate manual review while the script is still running.
 - Do not inspect the diff in parallel as a substitute for waiting.
 - Do not produce findings, a final answer, or a review summary until the script exits.
-- If the command returns a session id, keep polling that same session until it exits, but wait about 5 minutes between polls unless the user asks for status.
-- While waiting, send only brief progress updates to the user when a poll returns new output or the user asks for status.
+- If your harness exposes the running command as a pollable task, check it roughly every 5 minutes for new progress output — but treat each check as a status peek, not permission to start other review work.
+- While waiting, send only brief progress updates to the user when new output appears or the user asks for status.
 - If the user asks for status, report whether the script is still running, then keep waiting unless the user explicitly tells you to stop.
 
 ## Fit
@@ -58,7 +58,7 @@ node <skill-directory>/scripts/review.js --cwd "<project directory>" "<review pr
 
 3. Monitor progress.
 
-The script buffers progress and final Markdown. Poll the running command session about once every 5 minutes unless the user asks for status. If a poll returns no new output, keep waiting quietly. Do not treat the review as stuck until there has been no progress for more than 30 minutes.
+The script buffers progress and emits the final Markdown when it exits. If the harness hands back a pollable handle for the running command, peek at it about every 5 minutes for new buffered output; otherwise simply wait for the process to exit. If a check returns no new output, keep waiting quietly. Do not treat the review as stuck until there has been no progress for more than 30 minutes.
 
 4. After the script exits, triage the result before answering the user.
 

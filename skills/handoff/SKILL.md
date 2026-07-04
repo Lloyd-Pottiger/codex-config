@@ -15,11 +15,9 @@ Produce a self-contained artifact that lets a fresh agent continue work without 
 
 ## Copy-Friendly Chat Output
 
-For a focused prompt written in chat, output only the prompt text that should be
-given to the next agent. Do not add an introduction, explanation, language label,
-or closing note such as "Below is..." or "下面是...". Do not wrap the prompt in a
-code block. Start directly with the prompt title or objective so the user can use
-`/copy` on the response without cleanup.
+For a focused prompt in chat, output only the prompt text — no intro, explanation,
+language label, code block, or closing note. Start at the title or objective so the
+user can `/copy` it without cleanup.
 
 ## Focused Prompt
 
