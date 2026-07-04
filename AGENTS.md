@@ -10,14 +10,19 @@
 
 - For trivial tasks, keep the process lightweight, but still avoid guessing when a wrong assumption would change the result.
 - Before non-trivial implementation, state the working assumptions and success criteria. If a request has multiple plausible meanings that cannot be resolved from local context, ask before editing.
-- Choose the smallest change that fully solves the real problem. Do not add speculative features, fallback chains, configurability, or abstractions for single-use code.
+- Choose the simplest coherent end-state that fully solves the real problem, then minimize the diff needed to reach it. Do not preserve an awkward implementation just because it is already present. Do not add speculative features, fallback chains, configurability, or abstractions for single-use code.
 - Keep edits surgical, but leave the touched code coherent. Avoid unrelated cleanup, adjacent formatting churn, or opportunistic refactors.
 - Match existing style unless the local style directly causes the issue being fixed.
 - If the requested change exposes duplicated or awkward code in the same touched area, simplify it when that reduces the final diff and preserves behavior.
+- If extending the current implementation would require another wrapper, branch, fallback path, bool flag, adapter, or special case for the same concern, stop and simplify or replace the local implementation instead of layering on a patch.
+- When a plan, approach, or partial implementation is replaced, remove the superseded code in the same change unless keeping it is an explicit requirement. Clean up dead helpers, branches, flags, comments, tests, imports, and state from the abandoned approach.
 - Remove imports, variables, functions, wrappers, tests, branches, or small local duplication made unused or unnecessary by your own changes.
 - Mention unrelated dead code or questionable patterns outside the touched area instead of deleting them.
+- Comments and docs should explain invariants, rationale, interfaces, and non-obvious behavior. Do not use them to narrate patch history, rejected alternatives, or what was intentionally not done.
 - Make every changed line either implement the request, verify it, or keep the directly touched code simpler than the alternative. If the implementation starts to sprawl, stop and simplify before continuing.
 - Convert work into verifiable goals. For bugs, reproduce the failure with a focused test when feasible; for validation changes, cover invalid inputs; for refactors, preserve behavior with existing or targeted tests.
+- Tests must protect the current behavioral contract, not implementation history. Delete or rewrite tests that only prove a temporary reuse path, superseded wiring, intermediate TDD step, or abandoned approach.
+- When config ownership, routing, feature flags, or entrypoints change, re-evaluate nearby tests in the touched scope. Keep a test only if removing it would lose a distinct current guarantee.
 - Do not claim completion until the relevant verification has run and the result is known. If verification cannot run, explain the blocker clearly.
 
 # Performance Expectations for Infra Projects
