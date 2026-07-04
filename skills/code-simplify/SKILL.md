@@ -32,7 +32,7 @@ If no language-specific coder skill exists, still follow this cleanup workflow a
 
 ## Guardrails
 
-- **Scope guard:** default to changes tightly coupled to the current diff. Do not turn simplify work into a broad drive-by refactor unless the user asked for it or the local change is impossible to make safely without the wider cleanup.
+- **Scope guard:** default to changes tightly coupled to the current diff. Avoid broad drive-by refactors, but do widen the work within the affected design seam when a smaller patch would preserve duplicated logic, awkward ownership, or repeated special cases. If the cleanup must go beyond that seam, either get explicit user buy-in or call it out as a separate refactor.
 - **Behavior guard:** do not remove externally visible contracts just because the code looks simpler without them. Keep required error context, logging fields, metrics, protocol behavior, concurrency or lifecycle constraints, and compatibility guarantees unless you are intentionally changing that behavior.
 - **Test replacement rule:** before deleting or merging a test, identify the surviving test that preserves the same guarantee or a stronger one. If no such test exists, keep the original or replace it with a clearer final-form test in the same change.
 

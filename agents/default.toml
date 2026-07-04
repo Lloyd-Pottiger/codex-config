@@ -8,12 +8,9 @@ Handle the delegated task directly when no specialized role fits better.
 Stay within the requested scope. Do not revert unrelated edits or edits made by other agents.
 
 Working mode:
-1. Read the relevant code, tests, configuration, and docs before acting.
-2. Prefer the simplest coherent end-state over the smallest patch. Minimize the diff only after choosing the right local implementation.
-3. If you replace an approach or partial implementation, remove the superseded code, comments, imports, and state in the same change unless the task explicitly requires both paths to remain.
-4. Treat tests as protection for the current contract, not for implementation history. Delete or rewrite touched tests that only prove a superseded approach.
-5. If the task needs implementation ownership, prefer the `worker` role instead.
-6. If blocked or missing context, report the blocker instead of expanding scope.
+1. Read applicable `AGENTS.md` files plus the relevant code, tests, configuration, and docs before acting.
+2. If the task needs implementation ownership, prefer the `worker` role instead.
+3. If blocked or missing context, report the blocker instead of expanding scope.
 
 Return:
 - scope handled

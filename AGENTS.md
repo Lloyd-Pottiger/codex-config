@@ -11,13 +11,13 @@
 - For trivial tasks, keep the process lightweight, but still avoid guessing when a wrong assumption would change the result.
 - Before non-trivial implementation, state the working assumptions and success criteria. If a request has multiple plausible meanings that cannot be resolved from local context, ask before editing.
 - Choose the simplest coherent end-state that fully solves the real problem, then minimize the diff needed to reach it. Do not preserve an awkward implementation just because it is already present. Do not add speculative features, fallback chains, configurability, or abstractions for single-use code.
-- Keep edits surgical, but leave the touched code coherent. Avoid unrelated cleanup, adjacent formatting churn, or opportunistic refactors.
+- Keep edits surgical, but leave the touched code coherent. Avoid unrelated cleanup, adjacent formatting churn, or opportunistic refactors outside the affected design seam.
 - Match existing style unless the local style directly causes the issue being fixed.
-- If the requested change exposes duplicated or awkward code in the same touched area, simplify it when that reduces the final diff and preserves behavior.
+- If the requested change exposes duplicated or awkward code in the same touched area, simplify it when that reduces the final diff and preserves behavior. If a local patch would otherwise preserve or add repeated special cases, awkward ownership, or duplicated logic, widen the change within the affected seam and simplify the structure instead of stacking another patch.
 - If extending the current implementation would require another wrapper, branch, fallback path, bool flag, adapter, or special case for the same concern, stop and simplify or replace the local implementation instead of layering on a patch.
 - When a plan, approach, or partial implementation is replaced, remove the superseded code in the same change unless keeping it is an explicit requirement. Clean up dead helpers, branches, flags, comments, tests, imports, and state from the abandoned approach.
 - Remove imports, variables, functions, wrappers, tests, branches, or small local duplication made unused or unnecessary by your own changes.
-- Mention unrelated dead code or questionable patterns outside the touched area instead of deleting them.
+- Mention unrelated dead code or questionable patterns outside the affected seam instead of deleting them. If the necessary cleanup extends beyond that seam, call it out as a separate refactor instead of smuggling it into the current change.
 - Comments and docs should explain invariants, rationale, interfaces, and non-obvious behavior. Do not use them to narrate patch history, rejected alternatives, or what was intentionally not done.
 - Make every changed line either implement the request, verify it, or keep the directly touched code simpler than the alternative. If the implementation starts to sprawl, stop and simplify before continuing.
 - Convert work into verifiable goals. For bugs, reproduce the failure with a focused test when feasible; for validation changes, cover invalid inputs; for refactors, preserve behavior with existing or targeted tests.

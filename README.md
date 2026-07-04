@@ -10,6 +10,43 @@ portable configuration that should be shared:
 Local runtime state, credentials, logs, history, SQLite databases, sessions, and
 machine-specific config are intentionally ignored.
 
+## What Problems This Profile Tries To Solve
+
+This profile is tuned for production-facing coding work, especially infrastructure
+and backend changes where "mostly works" is not good enough.
+
+It is opinionated about a few recurring Codex failure modes:
+
+- Patch-first changes: Codex often tries to preserve the current shape and add
+  one more branch, wrapper, flag, or fallback. This profile pushes it toward
+  choosing the simplest coherent end-state first, then minimizing diff size.
+- Unbounded refactors in the wrong direction: Codex can either avoid needed
+  restructuring and keep stacking patches, or use a small task as an excuse for
+  a broad cleanup. This profile tries to hold a middle line: allow refactoring
+  within the affected design seam when the local structure is wrong, but avoid
+  unrelated cleanup outside that seam.
+- Half-removed old approaches: when an implementation starts with approach A and
+  later switches to approach B, Codex often leaves dead helpers, comments,
+  branches, imports, or state behind. This profile tells workers to remove the
+  superseded local implementation in the same change.
+- Tests that follow implementation history instead of current behavior: Codex
+  tends to keep tests that only proved a temporary reuse path, old wiring, or an
+  intermediate TDD step. This profile treats tests as protection for the current
+  contract and asks agents to delete or rewrite stale tests.
+- Review that only checks correctness bugs: the bundled `codex-review` skill was
+  tightened to also look for material implementation concerns such as
+  over-abstraction, duplicate state, unnecessary API surface, and avoidable
+  common-case cost.
+- Comments and docs that record patch history: this profile prefers comments
+  that explain invariants, rationale, interfaces, and non-obvious behavior,
+  rather than narrating what was tried or intentionally not done.
+- Hot-path drift in infra code: the global instructions explicitly bias Codex to
+  notice avoidable CPU, memory, IO/RPC, locking, and concurrency overhead
+  instead of treating performance as an afterthought.
+
+In short, this profile is trying to make Codex behave less like a patching tool
+and more like a careful engineer optimizing for the final code shape.
+
 ## Install or Update
 
 Install or update `${CODEX_HOME:-$HOME/.codex}` with one command:
