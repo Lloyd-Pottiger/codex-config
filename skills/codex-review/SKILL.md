@@ -1,11 +1,11 @@
 ---
 name: codex-review
-description: Run a synchronous independent Codex CLI deep code review for non-trivial, final, high-risk, or production-critical changes. Use when explicitly invoked as $codex-review, when asked for a deep/second-pass review, or as the final review phase after substantial implementation; after starting the script, wait for it to exit before doing any triage or final response.
+description: Review a stable branch, commit, PR, or working-tree change with an independent Codex CLI against both repository standards and the originating spec. Use when explicitly invoked as $codex-review, when asked for a deep or second-pass review, or as the final review phase after substantial implementation; after starting the script, wait for it to exit before triage or a final response.
 ---
 
 # Codex Review
 
-Launch a separate Codex reviewer through `scripts/review.js` and wait for it to complete. Use your own judgment only after the script exits, to verify and triage the script's findings.
+Launch a separate Codex reviewer through `scripts/review.js` and wait for it to complete. The fresh reviewer owns evidence discovery and review; the main agent verifies and triages its result only after the script exits.
 
 ## Synchronous Execution Rule
 
@@ -34,9 +34,9 @@ Avoid this skill when:
 
 ## Workflow
 
-1. Define the review scope.
+1. Pin the review artifact.
 
-Use the narrowest prompt that matches the request:
+Derive the exact scope from the user request and repository state. Use the narrowest prompt that identifies one stable artifact:
 
 ```text
 Review current code changes (staged, unstaged, and untracked files)
@@ -46,9 +46,13 @@ Review code changes for commit range <sha1>..<sha2>
 Review <specific path/module/feature> for <specific risk or behavior>
 ```
 
-If none of these scopes can be inferred from the user request or repository state, ask for clarification before running the tool.
+Resolve every named ref before starting. For a branch or tag, review against its merge-base with `HEAD`; for an explicit commit range, preserve the requested endpoints. For current changes, include staged, unstaged, and untracked files. Stop before launching the reviewer if the ref is invalid, the selected diff is empty, or the scope remains ambiguous after inspecting the repository.
 
-2. Run the review script in the foreground.
+2. Pass known evidence sources.
+
+Include any user-supplied issue, PRD, spec, acceptance criteria, or standards paths in the review prompt. Do not invent a spec when none is known; the independent reviewer will discover repository-backed sources and report when no spec is available.
+
+3. Run the review script in the foreground.
 
 ```shell
 node <skill-directory>/scripts/review.js --cwd "<project directory>" "<review prompt>"
@@ -56,23 +60,27 @@ node <skill-directory>/scripts/review.js --cwd "<project directory>" "<review pr
 
 `scripts/review.js` lives inside this skill directory, not inside the project being reviewed. The review may take a long time; let it run until it exits. Do not append `&`, do not detach it, and do not move on to another review path while it is active.
 
-3. Monitor progress.
+4. Monitor progress.
 
 The script buffers progress and emits the final Markdown when it exits. If the harness hands back a pollable handle for the running command, peek at it about every 5 minutes for new buffered output; otherwise simply wait for the process to exit. If a check returns no new output, keep waiting quietly. Do not treat the review as stuck until there has been no progress for more than 30 minutes.
 
-4. After the script exits, triage the result before answering the user.
+5. After the script exits, triage the result before answering the user.
 
 - Verify each reported finding and implementation concern against the diff and surrounding code.
 - Drop clear false positives and speculative redesign suggestions instead of forwarding them blindly.
 - Preserve the reviewer's priority labels for findings when they are defensible; keep implementation concerns separate unless the evidence clearly supports upgrading one into a finding.
+- Preserve explicit Spec and Standards coverage, but do not let either axis mask correctness, security, performance, compatibility, or operational findings.
 - If the review reports no actionable findings, say that directly and include any material implementation concerns or residual validation gaps it identified.
 
 ## Review Standard
 
 The delegated reviewer is instructed to perform a production-critical review:
 
-- Determine the exact change set before judging it.
-- Understand the problem, intent, and solution mechanics from code, tests, docs, commit messages, and repository instructions.
+- Verify the pinned artifact and determine the exact change set before judging it.
+- Discover the originating spec from the user request, commit or PR references, repository specs or PRDs, tests, and related docs. If no authoritative spec exists, say so rather than inferring requirements.
+- Discover repository standards from applicable `AGENTS.md`, contribution guides, coding standards, and engineering docs.
+- Review the **Spec** axis for missing or partial requirements, unrequested scope, and implementations that contradict the cited requirement.
+- Review the **Standards** axis for documented-rule violations. Treat general code smells only as judgment calls; repository standards override them, and tooling-enforced style is not a review finding.
 - Explain or internally account for non-obvious control flow, data flow, state changes, concurrency, and failure modes.
 - Evaluate negative impacts across correctness, security, robustness, compatibility, CPU, memory, IO/RPC behavior, logging cost, and maintainability.
 - Evaluate implementation shape: whether abstractions pay for themselves, whether a simpler local design exists, and whether the diff adds avoidable common-case cost. Prefer `delete > reuse > merge > abstract` when judging alternatives.
