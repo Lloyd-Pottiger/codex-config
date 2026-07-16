@@ -62,6 +62,8 @@ curl -fsSL https://raw.githubusercontent.com/Lloyd-Pottiger/codex-profile/main/i
 
 The installer adds missing files and updates existing profile files in place.
 Files that exist only in the destination are kept.
+It also registers installed `agents/*.toml` files in `config.toml`; existing
+agent registration sections are preserved.
 
 From a local checkout, run:
 

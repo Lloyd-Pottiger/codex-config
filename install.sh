@@ -187,6 +187,55 @@ install_children() {
     done
 }
 
+register_agents() {
+    source_agents=$1
+    codex_home=$2
+    config_file=$codex_home/config.toml
+
+    if [ ! -e "$config_file" ]; then
+        : >"$config_file"
+    elif [ ! -f "$config_file" ] || [ -L "$config_file" ]; then
+        log "skip agent registration: config is not a regular file: $config_file"
+        skipped_count=$((skipped_count + 1))
+        return
+    fi
+
+    for agent_file in "$source_agents"/*.toml; do
+        [ -f "$agent_file" ] || continue
+
+        agent_name=$(sed -n 's/^name = "\([a-z0-9-][a-z0-9-]*\)"$/\1/p' "$agent_file")
+        agent_description=$(sed -n 's/^description = \(".*"\)$/\1/p' "$agent_file")
+
+        if [ -z "$agent_name" ] || [ -z "$agent_description" ]; then
+            log "skip agent registration: missing simple name or description in $agent_file"
+            skipped_count=$((skipped_count + 1))
+            continue
+        fi
+
+        section="[agents.$agent_name]"
+        if awk -v section="$section" '$0 == section { found = 1 } END { exit !found }' "$config_file"; then
+            log "unchanged agent registration: $agent_name"
+            unchanged_count=$((unchanged_count + 1))
+            continue
+        fi
+
+        agent_filename=${agent_file##*/}
+        if [ ! -f "$codex_home/agents/$agent_filename" ]; then
+            log "skip agent registration: installed file is unavailable: $codex_home/agents/$agent_filename"
+            skipped_count=$((skipped_count + 1))
+            continue
+        fi
+
+        {
+            printf '\n%s\n' "$section"
+            printf 'description = %s\n' "$agent_description"
+            printf 'config_file = "agents/%s"\n' "$agent_filename"
+        } >>"$config_file"
+        log "registered agent: $agent_name"
+        installed_count=$((installed_count + 1))
+    done
+}
+
 main() {
     case ${1:-} in
         -h|--help)
@@ -214,6 +263,7 @@ main() {
     install_agents_md "$SOURCE_DIR" "$codex_home"
     install_children "$SOURCE_DIR/agents" "$codex_home/agents" agents
     install_children "$SOURCE_DIR/skills" "$codex_home/skills" skills
+    register_agents "$SOURCE_DIR/agents" "$codex_home"
 
     log "Done. Installed: $installed_count. Updated: $updated_count. Unchanged: $unchanged_count. Skipped: $skipped_count."
 }

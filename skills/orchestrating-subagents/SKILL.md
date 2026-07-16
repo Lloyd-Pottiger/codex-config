@@ -1,92 +1,87 @@
 ---
 name: orchestrating-subagents
-description: Orchestrate serial or parallel Codex subagents when the user explicitly authorizes delegation, subagents, multi-agent work, concurrent agent execution, or review fan-out.
+description: Orchestrate Codex subagents as an artifact DAG. Use only when the user explicitly authorizes delegation for read-only exploration or review fan-out, isolated parallel implementation, mixed multi-stage work, or dependency-ordered subtasks.
 ---
 
 # Orchestrating Subagents
 
-Use this skill only when the user explicitly authorizes subagents, delegation, multi-agent work, concurrent agent execution, or review fan-out. Do not treat task complexity alone as permission to spawn agents.
+Treat orchestration as an **artifact DAG**: subagents execute bounded nodes; accepted outputs become versioned artifacts; dependency edges decide which nodes are ready. The main agent owns the objective, DAG, cross-node decisions, integration, and final verification.
 
-## Parallel Gate
+## 1. Confirm Delegation Value
 
-- Start with a brief local inspection.
-- If delegation is not useful, stay local.
-- If delegation is useful, ask one question first: can the work run safely in parallel?
-- Treat work as parallel-safe only when there are at least 2 genuinely independent scopes, ownership does not overlap, each scope can be verified independently, and each prompt can be written without another subagent's result.
-- If that check passes, use parallel subagents. If it fails, use serial subagents.
-- When the user gives an agent count, treat it as the number of spawned task agents. The main agent and any organizer do not count.
-- Do not duplicate delegated work locally or edit a worker's owned files while it is running.
+Delegate only with explicit user authorization and at least one concrete benefit:
 
-## Organizer Gate
+- **context isolation**: local detail can stay out of the main agent's context;
+- **parallel latency**: independent nodes can reduce critical-path time; or
+- **independent perspective**: fresh context can improve exploration, design, or review.
 
-- Plan locally by default. Use `agent_type: "agent-organizer"` only if local inspection still leaves one of these unresolved:
-- worker ownership is unclear;
-- it is unclear whether the work can run in parallel safely;
-- the stage graph or dependency order is unclear; or
-- there are 3 or more writer agents and the integration order is still unclear.
-- If the user specified `n`, tell the organizer to plan for `n` spawned task agents when safe and to explain any smaller lineup.
-- Do not use an organizer just because the task is non-trivial, has review fan-out later, or uses more than one agent.
+Do not spawn agents merely because a task is large. Keep a node local when prompting, supervising, and integrating it would cost more than doing it locally. Treat a user-specified agent count as a capacity limit unless the user explicitly requires that many agents.
 
-## Spawning
+**Completion criterion:** every delegated node has a named benefit; otherwise keep it local.
 
-Choose agents by boundary, not by habit:
-- Use `agent_type: "explorer"` for independent codebase questions.
-- Use `agent_type: "worker"` for implementation slices with clear ownership.
-- Use `agent_type: "reviewer"` only after there is a stable artifact to review.
-- Use `agent_type: "qa-expert"` for test strategy, acceptance coverage, or release-risk review.
-- For `serial-subagents`, wait for each stage to finish before prompting the dependent stage. Common pipelines: `explorer -> worker`, `worker -> reviewer`, `qa-expert -> worker -> qa-expert`.
-- Each worker prompt must say the agent is not alone in the codebase, must not revert unrelated edits or edits by other agents, and must include `Ownership`, `Task`, `Constraints`, and `Return format`.
+## 2. Build the Artifact DAG
 
-## Waiting
+Inspect enough repository state to identify the real boundaries before dispatching. Define each node with:
 
-- Codex subagents can be slow. Prefer patience over supervision.
-- Do not poll frequently just to check progress.
-- Preferred wait: `wait_agent` on all outstanding targets with a `10-20 min` timeout.
-- A `wait_agent` timeout is not a failure. It means the agent has not reached a final state yet.
-- Do not treat one or more short waits or timeouts as evidence that a subagent is hung.
-- Default global wait budget: `60 min`, unless the user specifies a different budget.
-- If a wait times out before the global budget, report brief status if useful, continue non-overlapping work, then wait again.
-- Do not infer agent failure from one or more timeouts.
-- If the global budget is reached, report completed agents, outstanding agents, partial results, and ask whether to continue waiting, close slow agents, or take over.
+- `ID` and `role`;
+- `mode`: `read` or `write`;
+- `depends_on`;
+- exact input artifacts and versions, such as paths, design revision, or base/head commits;
+- responsibility and, for writers, exclusive ownership;
+- a checkable completion criterion; and
+- expected output artifacts.
 
-## Parallel-Only Rules
+Use responsibility boundaries, not file lists alone. Separate writers only when their interface assumptions and verification can remain independent. Add an edge when one node needs another's result; dependencies make nodes serial, not the whole DAG.
 
-- For 2 or more concurrent agents, use one `multi_tool_use.parallel` call that wraps the `spawn_agent` calls.
-- For 2 or more concurrent writer agents, use `$using-git-worktrees` isolation. This skill owns the `when`; follow `$using-git-worktrees` for setup details.
-- Give each concurrent writer one worktree branch and exclusive ownership. If ownership overlap is unavoidable, serialize instead.
-- Require commits when feasible; otherwise require an exact changed-file list and a clean diff summary.
+Keep requirement interpretation, cross-node trade-offs, conflict resolution, integration acceptance, and the final user response with the main agent. Use a dedicated organizer only when a brief local inspection cannot resolve the DAG, writer ownership, or integration order.
 
-## Required Agent Output
+For established DAG shapes, read [references/patterns.md](references/patterns.md) only for the matching branch.
 
-Workers must return: `Scope`, `Result`, `Changed files`, `Verification`, and `Risks/Follow-ups`. Worktree-isolated writers must also return `Worktree`, `Branch`, and `Commit(s)` when commits were created.
-Explorers and reviewers must return: `Scope`, `Findings`, `Evidence`, and `Risks/Follow-ups`.
-`qa-expert` agents must return: `Scope`, `Assessment`, `Evidence`, and `Risks/Follow-ups`.
-Reject vague output. If an answer lacks evidence, changed-file scope, or verification status, treat it as incomplete and resolve the gap before relying on it.
+**Completion criterion:** every required output is reachable from the DAG, every dependency is explicit, and every concurrent writer has independent responsibility.
 
-## Integration
+## 3. Prepare Stable Inputs and Context
 
-- Do not finish, summarize, or start review fan-out until every required prior-stage agent reaches a final state, unless the user interrupts or changes the plan.
-- Read each result and inspect the changed files or evidence that matters.
-- Resolve conflicts and incompatible assumptions before moving to the next stage.
-- For concurrent writers, inspect each worker branch before picking accepted commits into the target branch or integration worktree.
-- Do not manually recreate large worker changes locally unless the worker could not produce commits and the diff has been inspected.
-- Do not trust an agent success report by itself. Inspect the work, then verify the integrated result locally.
+Dispatch a node only when all dependencies are accepted and every input artifact is stable at the version named in its prompt. Give each subagent the smallest sufficient context:
 
-## Review Fan-Out
+- prefer `fork_turns: "none"` or the smallest useful recent-turn window;
+- pass user constraints and task-local facts explicitly;
+- point to raw code, commits, tests, docs, or prior artifacts instead of retelling exploration history; and
+- use `fork_turns: "all"` only when the node genuinely depends on the full conversation.
 
-After implementation work is integrated, launch review agents only if the user requested review fan-out or the workflow clearly needs a post-work review stage.
-- Use the user-specified review-stage count. If unspecified, default to 3 agents.
-- Review-stage agents are read-only unless the user explicitly authorizes them to edit.
-- Spawn 2 or more review-stage agents with `multi_tool_use.parallel`.
-- Use `agent_type: "reviewer"` for defect-review angles and `agent_type: "qa-expert"` for tests, verification, or rollout angles.
-- Give every review-stage agent the same stable artifact or diff, plus a distinct angle.
-- Default lineup: `reviewer` for correctness and requirement coverage; `reviewer` for simplicity, maintainability, performance, and concurrency risk; `qa-expert` for tests, verification, rollout, and operational risk.
-- Wait with the same protocol. Integrate findings by severity and evidence. Fix real issues, reject false positives explicitly, and re-run verification after changes.
+Write prompts from [references/prompt-contracts.md](references/prompt-contracts.md). When specialized agent configurations are available, use an explorer for focused reading, a worker for bounded implementation, a reviewer for defect review, and a QA specialist for test or rollout risk. Otherwise encode the role directly in the prompt.
+
+For two or more concurrent writers, invoke `$using-git-worktrees` and prepare one branch/worktree per writer from the same accepted base commit. Give every writer its absolute worktree path and branch; require all work to occur there. Never let concurrent agents write to the same checkout or branch.
+
+**Completion criterion:** every ready node has stable, sufficient inputs; every writer has an isolated workspace and explicit responsibility.
+
+## 4. Dispatch the Ready Set
+
+Compute the **ready set**: pending nodes whose dependencies are accepted and whose inputs and workspaces are ready. Dispatch independent ready nodes without waiting between launches, up to the available capacity. Prioritize critical-path nodes, then use spare capacity for sidecar exploration or review.
+
+Do not duplicate a running node locally or edit a writer's owned responsibility. Concurrent read-only nodes may inspect the same artifact when their questions or review angles are distinct. Concurrent writers require both worktree isolation and independent logical ownership; worktree isolation alone does not make coupled changes safe.
+
+**Completion criterion:** every dispatched node was ready at launch, and no concurrent node pair has conflicting write or decision ownership.
+
+## 5. Accept Outputs, Then Advance
+
+Wait for actual completion instead of polling frequently. A wait timeout means only that work is still running. While waiting, do only work that cannot conflict with running nodes.
+
+Validate each returned artifact against its node contract and repository state. Do not accept a success claim without inspecting the relevant evidence, diff, commit, or verification result. If an output is incomplete, use a follow-up with the same agent to close the specific gap when possible; avoid spawning duplicate work.
+
+Mark a node `accepted` only after validation. Then recompute the ready set and repeat dispatch. If a prerequisite changes, version the new artifact and mark running or completed descendants that consumed the old version as `stale`; stop, redo, or re-review them as appropriate.
+
+**Completion criterion:** every accepted node satisfies its contract, and no downstream result relies on a superseded artifact.
+
+## 6. Integrate Through Gates
+
+Integrate accepted writer commits in dependency order. Before accepting each commit, inspect its exact diff and verification. After integration, resolve conflicts and incompatible assumptions in the integrated checkout; do not push that responsibility back to workers whose local slices were individually correct.
+
+Run slice review against the slice artifact and holistic review against the integrated artifact. Any modification after review creates a new artifact version: invalidate affected findings and rerun the review or verification whose evidence no longer applies.
+
+Verify the terminal integrated artifact locally. Subagent checks and per-branch tests do not replace integrated verification.
+
+**Completion criterion:** all required nodes are accepted, accepted commits are integrated, findings are fixed or explicitly resolved, affected checks were rerun after changes, and terminal verification is known.
 
 ## Final Report
 
-Keep the final report short, but include:
-- the integrated outputs or accepted changes;
-- writer worktrees or branches used and which commits were picked, when concurrent writers were used;
-- key review findings or unresolved risks, when review ran; and
-- final verification commands and results.
+Report the integrated result, accepted writer commits and branches when used, material review findings or residual risks, and final verification commands and results. Derive this scope from the final repository state and DAG ledger, not conversation memory.
