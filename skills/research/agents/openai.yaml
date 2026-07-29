@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research"
+  short_description: "Delegate source-backed research to a background agent"
+  default_prompt: "Use $research to investigate this question against primary sources and save the cited findings in the repository."
