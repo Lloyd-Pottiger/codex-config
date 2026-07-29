@@ -1,0 +1,4 @@
+interface:
+  display_name: "Performance Engineering"
+  short_description: "Prove performance gains without hidden cost transfer"
+  default_prompt: "Use $performance-engineering to establish the causal mechanism, whole-system trade-offs, and evidence for this performance change."

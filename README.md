@@ -17,9 +17,11 @@ and backend changes where "mostly works" is not good enough.
 
 It is opinionated about a few recurring Codex failure modes:
 
-- Patch-first changes: Codex often tries to preserve the current shape and add
-  one more branch, wrapper, flag, or fallback. This profile pushes it toward
-  choosing the simplest coherent end-state first, then minimizing diff size.
+- Patch-first changes: Codex often preserves the current shape and translates
+  each new requirement or correction into one more branch, wrapper, flag,
+  fallback, rule, or exception. This profile treats non-trivial feedback as
+  evidence about the desired outcome, re-derives the simplest coherent
+  end-state, and only then minimizes diff size.
 - Unbounded refactors in the wrong direction: Codex can either avoid needed
   restructuring and keep stacking patches, or use a small task as an excuse for
   a broad cleanup. This profile tries to hold a middle line: allow refactoring
@@ -45,9 +47,10 @@ It is opinionated about a few recurring Codex failure modes:
 - Comments and docs that record patch history: this profile prefers comments
   that explain invariants, rationale, interfaces, and non-obvious behavior,
   rather than narrating what was tried or intentionally not done.
-- Hot-path drift in infra code: the global instructions explicitly bias Codex to
-  notice avoidable CPU, memory, IO/RPC, locking, and concurrency overhead
-  instead of treating performance as an afterthought.
+- Hot-path drift in infra code: the global instructions require performance
+  effects to be considered during implementation and review. The bundled
+  `performance-engineering` skill provides deeper causal analysis and
+  validation for deliberate optimizations and material performance claims.
 
 In short, this profile is trying to make Codex behave less like a patching tool
 and more like a careful engineer optimizing for the final code shape.

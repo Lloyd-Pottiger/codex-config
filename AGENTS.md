@@ -1,93 +1,48 @@
-# Global Working Principles
+# Core Engineering Principles
 
-- Before proposing a design, plan, or change, read the relevant code, config, tests, and docs until the behavior, constraints, and interfaces are clear — inspect the code directly rather than inferring from names.
-- Prefer the simplest solution that fully solves the real problem. Avoid unnecessary abstractions, fallback layers, defensive complexity, or speculative extensibility.
-- Treat all design, implementation, and review output as production-facing work. Prioritize correctness, clarity, maintainability, and operational robustness.
-- Keep modules single-purpose, with explicit boundaries and simple interfaces.
-- When information is still ambiguous after inspection, explicitly identify the uncertainty and resolve it before committing to a design or implementation.
+- Work from first principles. Establish the intended externally observable behavior, invariants, and real constraints before choosing an implementation. Treat the current code shape as evidence, not as a constraint that must be preserved.
+- Simple is best. Prefer the solution with the fewest concepts, states, branches, layers, and moving parts that fully satisfies the contract. Avoid speculative extensibility, defensive complexity, fallback chains, and abstractions without a demonstrated need.
+- Optimize for the whole system and the real user goal, not an isolated instruction or metric. Trace important upstream, downstream, common-case, and failure-path effects. Do not knowingly improve one dimension by materially regressing correctness, security, reliability, maintainability, latency, throughput, resource use, or operability elsewhere. If such a trade-off is necessary, explain it and obtain user confirmation before proceeding.
+- Treat implementation, design, and review work as production-facing unless the local context clearly says otherwise. Prefer correctness, data integrity, security, and operational robustness over convenience.
 
-# Execution Discipline
+When principles compete, use this order:
 
-- For trivial tasks, keep the process lightweight, but still avoid guessing when a wrong assumption would change the result.
-- Before non-trivial implementation, state the working assumptions and success criteria. If a request has multiple plausible meanings that cannot be resolved from local context, ask before editing.
-- Choose the simplest coherent end-state that fully solves the real problem, then minimize the diff needed to reach it. Do not preserve an awkward implementation just because it is already present. Do not add speculative features, fallback chains, configurability, or abstractions for single-use code.
-- Keep edits surgical, but leave the touched code coherent. Avoid unrelated cleanup, adjacent formatting churn, or opportunistic refactors outside the affected design seam.
-- Match existing style unless the local style directly causes the issue being fixed.
-- If the change exposes duplicated or awkward code in the same area, simplify it within the affected seam when that reduces the final diff and preserves behavior — don't stack a patch that preserves repeated special cases or duplicated logic.
-- If extending the current implementation would require another wrapper, branch, fallback path, bool flag, adapter, or special case for the same concern, stop and simplify or replace the local implementation instead of layering on a patch.
-- When your changes make code dead — replacing an approach, or just leaving helpers, imports, branches, flags, comments, or tests unused — remove it in the same change unless keeping it is an explicit requirement.
-- Mention unrelated dead code or questionable patterns outside the affected seam instead of deleting them. If the necessary cleanup extends beyond that seam, call it out as a separate refactor instead of smuggling it into the current change.
-- Comments and docs should explain invariants, rationale, interfaces, and non-obvious behavior. Do not use them to narrate patch history, rejected alternatives, or what was intentionally not done.
-- Make every changed line either implement the request, verify it, or keep the directly touched code simpler than the alternative. If the implementation starts to sprawl, stop and simplify before continuing.
-- Convert work into verifiable goals. For bugs, reproduce the failure with a focused test when feasible; for validation changes, cover invalid inputs; for refactors, preserve behavior with existing or targeted tests.
-- Before any action that summarizes, commits, reviews, validates, or cleans up changes, determine the exact scope from observable repository state. Use the actual diff, file list, or commit range as the source of truth rather than the current conversation narrative.
-- If the observable scope is wider than the current owned slice, explicitly narrow the action to a verified subset or ask before proceeding. Do not describe, commit, review, or clean up "your changes" unless that set was derived from repository state.
-- Tests must protect the current behavioral contract, not implementation history. Delete or rewrite tests that only prove a temporary reuse path, superseded wiring, intermediate TDD step, or abandoned approach.
-- When config ownership, routing, feature flags, or entrypoints change, re-evaluate nearby tests in the touched scope. Keep a test only if removing it would lose a distinct current guarantee.
-- Do not claim completion until the relevant verification has run and the result is known. If verification cannot run, explain the blocker clearly.
+1. Preserve correctness, invariants, data integrity, security, and explicit contracts.
+2. Choose the best whole-system outcome and make material trade-offs explicit.
+3. Prefer the simplest coherent design.
+4. Minimize change scope and diff size only after the above are satisfied.
 
-# Performance Expectations for Infra Projects
+# Understand Before Changing
 
-- Assume the project is infrastructure software unless the local context clearly indicates otherwise.
-- Optimize for production performance, especially on hot paths.
-- Minimize avoidable memory allocation, memory copying, lock contention, RPC calls, synchronization overhead, and repeated parsing or conversion work.
-- Prefer dataflow and APIs that preserve locality, reduce indirection, and make ownership and lifetime costs obvious.
-- Performance work should first simplify the design and remove unnecessary work rather than layering on more checks, fallbacks, or complexity.
-- If a simpler design exposes a genuinely missing invariant or contract, fix that invariant directly instead of hiding the issue behind additional machinery.
+- Read the relevant code, configuration, tests, documentation, call paths, and consumers until the current behavior and constraints are clear. Inspect the implementation directly instead of inferring behavior from names or conversation history.
+- Before non-trivial implementation, state the working assumptions and verifiable success criteria. If unresolved ambiguity would materially change the solution, ask before editing.
+- Treat non-trivial feedback as evidence about the desired outcome, not automatically as the solution. Identify the underlying problem and revise the flawed design instead of translating the feedback literally into another rule, branch, or exception.
+- When implementing from a design document, verify the design against the current codebase. Call out and correct material gaps or inconsistencies instead of implementing infeasible or incomplete scaffolding.
+- For change-set-wide summaries, reviews, commits, validation, or cleanup, derive the exact scope from observable repository state such as the diff, file list, or commit range. If the repository contains unrelated work, narrow the action to the verified owned slice or ask before proceeding.
 
-# Performance Review Checklist for Hot Paths
+# Choose the Coherent End State
 
-When updating or reviewing performance-sensitive code such as RPC/read paths, search, scheduling, or background workers, explicitly check the items below and keep the common-case fast path simple.
+- Solve the underlying problem and enforce the missing invariant at its natural owner. Do not merely suppress a symptom or route around a broken contract.
+- For bug fixes, optimize for the cleanest correct implementation, not the smallest Git diff. Refactor or replace code inside the smallest coherent boundary when the existing structure prevents a simple fix; do not expand into unrelated cleanup.
+- Keep modules single-purpose and interfaces small. Add a module, abstraction, wrapper, adapter, flag, branch, or fallback only when it reduces total system complexity or represents a real domain concept.
+- If a change requires another special case for the same concern, stop and reconsider the local design. Prefer consolidating duplicated state and behavior over stacking patches.
+- Preserve existing public behavior unless the task explicitly changes it. Re-evaluate callers, tests, configuration ownership, routing, feature flags, entrypoints, migrations, and rollout implications when the affected contract crosses those boundaries.
 
-1. RPC
-   - Avoid N+1 patterns; prefer batching such as `batch_get` or range scans, and deduplicate keys before issuing requests.
-   - Do not fetch metadata or values that are not used; minimize transferred keys and bytes.
-   - If behavior changes, include a concise before/after note based on metrics, logs, or a focused benchmark.
-2. IO
-   - Avoid large scans; ensure tight bounds, correct limits, and early exits.
-   - Prefer cache-friendly access patterns; avoid re-reading the same data within a single request.
-3. CPU
-   - Hoist invariant work out of inner loops and reduce unnecessary branching on hot loops.
-   - Consider SIMD or vectorized libraries when they meaningfully reduce latency without making the design unnecessarily complex.
-4. Memory usage
-   - Avoid per-item allocations; pre-allocate and reuse scratch buffers where possible.
-   - Do not clone large vectors or byte buffers unless required; prefer borrowing or zero-copy representations when safe.
-5. Async and concurrency
-   - Parallelize independent async work only when it improves tail latency, and always cap concurrency with an explicit semaphore, budget, or equivalent control.
-   - Never hold locks across `.await`, and avoid blocking calls on async runtimes.
-6. Locks and contention
-   - Minimize lock scope and lock frequency; avoid introducing global or highly shared locks on hot paths.
-   - Use deterministic lock ordering for multi-key operations and avoid creating new deadlock edges.
-7. Memory copies
-   - Reduce encode/decode churn and unnecessary conversions; prefer reuse and zero-copy paths when safe.
-8. Cache friendliness
-   - Keep hot data contiguous, separate hot and cold fields when appropriate, and avoid excessive pointer chasing.
-   - Ensure caches have explicit budgets and predictable invalidation behavior.
-9. False sharing
-   - Avoid frequent writes to shared cache lines, including hot atomics or mutex-protected counters inside tight loops; batch or shard updates when possible.
-   - Consider padding or per-thread structures for highly contended fields.
+# Performance Discipline
 
-Other relevant review angles include backpressure and limits, retry and backoff behavior, observability costs, and failure-mode performance such as timeouts or partial-result handling.
+- During implementation and review, examine performance effects on the affected common and failure paths. Pay particular attention to RPC and IO count, scan bounds, repeated parsing or conversion, per-item allocation and copying, lock scope and contention, concurrency bounds, queue and cache growth, and work shifted into background or recovery paths.
+- Keep the common path simple and evaluate performance as a whole-system property. Support material performance decisions and claims with evidence appropriate to their risk, and include complementary paths and resource costs in that evidence.
 
-# Requirements for Design Documents
+# Finish the Change Completely
 
-- Design documents must be self-contained, internally consistent, and written for readers who do not have prior conversation context.
-- Use an objective, documentation-oriented tone. Do not refer to private discussion context or to any specific person who requested the document.
-- Explain enough background, constraints, and existing behavior for the proposal to be understandable on its own.
-- When discussing issues in existing code, include concrete code locations so the reader can verify the context.
-- When useful for readability, include diagrams, tables, or ASCII charts to explain control flow, data flow, or component relationships.
-- Clearly describe the problem, goals, non-goals, constraints, proposed design, key trade-offs, and rollout or validation strategy when applicable.
-- Keep the design simple and implementable. Avoid proposals that require unnecessary framework-building or over-generalized abstractions.
+- Remove implementation made redundant or obsolete by the change, including superseded helpers, adapters, branches, flags, state, imports, comments, configuration, and tests. Do not leave two approaches, transitional wiring, or dead compatibility paths without an explicit current requirement.
+- Tests must protect the current behavioral contract, not implementation history. Delete or rewrite tests whose contract is obsolete or duplicated, but do not remove a test merely because the implementation path that originally motivated it changed; retain coverage for every distinct current guarantee.
+- Simplify duplicated or awkward code within the directly affected boundary when doing so produces a more coherent final result. Report questionable code outside that boundary rather than silently broadening the task.
+- Comments and documentation should explain invariants, rationale, interfaces, and non-obvious behavior. Remove commentary that narrates patch history, rejected attempts, or obsolete behavior.
+- Make each changed line implement the requested outcome, verify it, or keep the touched design simpler and more coherent than the alternative.
 
-# Requirements for Implementation and Review
+# Verify the Contract
 
-- Before implementing from a design document, verify it against the current codebase for feasibility.
-- If the design is flawed, incomplete, or inconsistent with the actual code, explicitly call out the issue and propose concrete corrections before or during implementation.
-- Implement every critical part required for the system to work according to the intended design, not just surface-level scaffolding.
-- Break work into clear modules with explicit interfaces. If the design does not define the module split precisely enough, derive a clean decomposition from the design and the codebase.
-- Implement and validate modules incrementally. Complete one module and its tests before moving to the next when the work can be cleanly separated.
-- Add concise doc comments for public APIs.
-- Add comments for tricky implementation details when they materially improve readability or prevent misunderstanding.
-- Write necessary unit tests for key logic and critical paths. Keep tests focused, minimal, and non-redundant.
-- Do not claim completion until the relevant tests pass.
-- In review work, prioritize feasibility, correctness, performance implications, boundary clarity, and missing critical pieces over stylistic churn.
+- Convert the task into observable checks. For bugs, reproduce the failure with a focused test when feasible, then add regression coverage at the most appropriate level. For validation changes, cover invalid and boundary inputs. For refactors, verify preserved behavior.
+- Use the smallest set of focused unit, integration, end-to-end, static, or performance checks that adequately covers the changed contract and important failure modes. Choose the test layer by behavior, not by a blanket preference for unit tests.
+- Do not claim completion until relevant verification has run and its result is known. If verification cannot run or unrelated failures prevent a clean result, state exactly what was and was not verified.

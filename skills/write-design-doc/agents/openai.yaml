@@ -1,0 +1,4 @@
+interface:
+  display_name: "Write Design Doc"
+  short_description: "Turn code facts and decisions into an implementable design"
+  default_prompt: "Use $write-design-doc to create an evidence-backed technical design with traceable decisions and validation."
