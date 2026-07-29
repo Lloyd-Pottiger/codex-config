@@ -1,0 +1,7 @@
+interface:
+  display_name: "To Tickets"
+  short_description: "Create dependency-aware tracer-bullet implementation tickets"
+  default_prompt: "Use $to-tickets to turn this approved plan into independently verifiable tickets with explicit blocking edges."
+
+policy:
+  allow_implicit_invocation: false

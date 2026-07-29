@@ -1,0 +1,7 @@
+interface:
+  display_name: "Wayfinder"
+  short_description: "Map decisions across a large uncertain effort"
+  default_prompt: "Use $wayfinder to chart the unresolved decisions in this large effort and identify the first actionable frontier."
+
+policy:
+  allow_implicit_invocation: false

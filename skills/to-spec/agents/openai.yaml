@@ -1,0 +1,7 @@
+interface:
+  display_name: "To Spec"
+  short_description: "Synthesize discussion into a publishable specification"
+  default_prompt: "Use $to-spec to synthesize our settled discussion and the verified codebase context into a concise specification."
+
+policy:
+  allow_implicit_invocation: false
