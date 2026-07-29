@@ -169,24 +169,6 @@ install_tree() {
     done
 }
 
-install_agents_md() {
-    install_file "$1/AGENTS.md" "$2/AGENTS.md" AGENTS.md
-}
-
-install_children() {
-    src_dir=$1
-    dest_dir=$2
-    label=$3
-
-    for src in "$src_dir"/* "$src_dir"/.[!.]* "$src_dir"/..?*; do
-        path_exists "$src" || continue
-        name=${src##*/}
-        dest=$dest_dir/$name
-
-        install_entry "$src" "$dest" "$label/$name"
-    done
-}
-
 register_agents() {
     source_agents=$1
     codex_home=$2
@@ -260,9 +242,9 @@ main() {
 
     mkdir -p "$codex_home" "$codex_home/agents" "$codex_home/skills"
 
-    install_agents_md "$SOURCE_DIR" "$codex_home"
-    install_children "$SOURCE_DIR/agents" "$codex_home/agents" agents
-    install_children "$SOURCE_DIR/skills" "$codex_home/skills" skills
+    install_file "$SOURCE_DIR/AGENTS.md" "$codex_home/AGENTS.md" AGENTS.md
+    install_tree "$SOURCE_DIR/agents" "$codex_home/agents" agents
+    install_tree "$SOURCE_DIR/skills" "$codex_home/skills" skills
     register_agents "$SOURCE_DIR/agents" "$codex_home"
 
     log "Done. Installed: $installed_count. Updated: $updated_count. Unchanged: $unchanged_count. Skipped: $skipped_count."
