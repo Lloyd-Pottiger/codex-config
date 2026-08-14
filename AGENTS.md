@@ -45,6 +45,7 @@ When principles compete, use this order:
 - Remove implementation made redundant or obsolete by the change, including superseded helpers, adapters, branches, flags, state, imports, comments, configuration, and tests. Do not leave two approaches, transitional wiring, or dead compatibility paths without an explicit current requirement.
 - Tests must protect the current behavioral contract, not implementation history. Delete or rewrite tests whose contract is obsolete or duplicated, but do not remove a test merely because the implementation path that originally motivated it changed; retain coverage for every distinct current guarantee.
 - Simplify duplicated or awkward code within the directly affected boundary when doing so produces a more coherent final result. Report questionable code outside that boundary rather than silently broadening the task.
+- Add comments for key classes, functions, and variables, and for tricky or complex implementations. Explain their purpose, invariants, or reasoning rather than merely restating the code.
 - Comments and documentation should explain invariants, rationale, interfaces, and non-obvious behavior. Remove commentary that narrates patch history, rejected attempts, or obsolete behavior.
 - Make each changed line implement the requested outcome, verify it, or keep the touched design simpler and more coherent than the alternative.
 
