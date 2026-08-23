@@ -1,6 +1,6 @@
 ---
 name: orchestrating-subagents
-description: Orchestrate Codex subagents as an artifact DAG. Use only when the user explicitly authorizes delegation for read-only exploration or review fan-out, isolated parallel implementation, mixed multi-stage work, or dependency-ordered subtasks.
+description: Orchestrate subagents as an artifact DAG. Use only when the user explicitly authorizes delegation for read-only exploration or review fan-out, isolated parallel implementation, mixed multi-stage work, or dependency-ordered subtasks.
 ---
 
 # Orchestrating Subagents
@@ -43,14 +43,13 @@ For established DAG shapes, read [references/patterns.md](references/patterns.md
 
 Dispatch a node only when all dependencies are accepted and every input artifact is stable at the version named in its prompt. Give each subagent the smallest sufficient context:
 
-- prefer `fork_turns: "none"` or the smallest useful recent-turn window;
-- pass user constraints and task-local facts explicitly;
+- subagents start with a fresh context and see only the task prompt — pass user constraints and task-local facts explicitly;
 - point to raw code, commits, tests, docs, or prior artifacts instead of retelling exploration history; and
-- use `fork_turns: "all"` only when the node genuinely depends on the full conversation.
+- resume the same subagent instance for follow-ups that genuinely depend on its prior context instead of spawning a duplicate.
 
-Write prompts from [references/prompt-contracts.md](references/prompt-contracts.md). When specialized agent configurations are available, use an explorer for focused reading, a worker for bounded implementation, a reviewer for defect review, and a QA specialist for test or rollout risk. Otherwise encode the role directly in the prompt.
+Write prompts from [references/prompt-contracts.md](references/prompt-contracts.md). When the host provides specialized subagent types, use them for focused reading, bounded implementation, defect review, or test and rollout risk as appropriate. Otherwise encode the role directly in the prompt.
 
-For two or more concurrent writers, invoke `$using-git-worktrees` and prepare one branch/worktree per writer from the same accepted base commit. Give every writer its absolute worktree path and branch; require all work to occur there. Never let concurrent agents write to the same checkout or branch.
+For two or more concurrent writers, invoke the `using-git-worktrees` skill and prepare one branch/worktree per writer from the same accepted base commit. Give every writer its absolute worktree path and branch; require all work to occur there. Never let concurrent agents write to the same checkout or branch.
 
 **Completion criterion:** every ready node has stable, sufficient inputs; every writer has an isolated workspace and explicit responsibility.
 

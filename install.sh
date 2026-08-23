@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-REPO_URL=${CODEX_PROFILE_REPO:-https://github.com/Lloyd-Pottiger/codex-profile.git}
+REPO_URL=${CODEX_PROFILE_REPO:-https://github.com/Lloyd-Pottiger/agent-profile.git}
 REPO_REF=${CODEX_PROFILE_REF:-main}
 SOURCE_DIR=${CODEX_PROFILE_SOURCE:-}
 TMP_DIR=
@@ -10,10 +10,14 @@ usage() {
     cat <<'EOF'
 Usage: install.sh
 
-Install or update this Codex profile in ${CODEX_HOME:-$HOME/.codex}.
+Install or update this agent profile in ${AGENTS_HOME:-$HOME/.agents}.
+Both Kimi Code and Codex CLI discover skills from the shared ~/.agents/skills
+directory, so skills install only there. When a Codex home exists
+(${CODEX_HOME:-$HOME/.codex}), AGENTS.md is also installed there.
 
 Environment:
-  CODEX_HOME           Destination Codex home. Defaults to $HOME/.codex.
+  AGENTS_HOME           Destination for the shared profile. Defaults to $HOME/.agents.
+  CODEX_HOME            Codex home override. When unset, ~/.codex is used if it exists.
   CODEX_PROFILE_SOURCE  Local source checkout to install from.
   CODEX_PROFILE_REPO    Git repository used when no local source is found.
   CODEX_PROFILE_REF     Git branch or tag used when cloning. Defaults to main.
@@ -42,14 +46,14 @@ path_exists() {
     [ -e "$1" ] || [ -L "$1" ]
 }
 
-resolve_codex_home() {
-    if [ -n "${CODEX_HOME:-}" ]; then
-        printf '%s\n' "$CODEX_HOME"
+resolve_agents_home() {
+    if [ -n "${AGENTS_HOME:-}" ]; then
+        printf '%s\n' "$AGENTS_HOME"
         return
     fi
 
-    [ -n "${HOME:-}" ] || die 'HOME is not set; set CODEX_HOME explicitly'
-    printf '%s\n' "$HOME/.codex"
+    [ -n "${HOME:-}" ] || die 'HOME is not set; set AGENTS_HOME explicitly'
+    printf '%s\n' "$HOME/.agents"
 }
 
 find_local_source() {
@@ -68,7 +72,6 @@ find_local_source() {
 
     if [ -n "$script_dir" ] &&
         [ -f "$script_dir/AGENTS.md" ] &&
-        [ -d "$script_dir/agents" ] &&
         [ -d "$script_dir/skills" ]; then
         SOURCE_DIR=$script_dir
     fi
@@ -79,7 +82,7 @@ clone_source() {
         die 'git is required when install.sh is run outside a local checkout'
 
     tmp_parent=${TMPDIR:-/tmp}
-    TMP_DIR=$(mktemp -d "${tmp_parent%/}/codex-profile.XXXXXX")
+    TMP_DIR=$(mktemp -d "${tmp_parent%/}/agent-profile.XXXXXX")
     trap cleanup EXIT HUP INT TERM
 
     printf 'Cloning %s (%s)...\n' "$REPO_URL" "$REPO_REF" >&2
@@ -90,7 +93,6 @@ clone_source() {
 
 validate_source() {
     [ -f "$1/AGENTS.md" ] || die "missing AGENTS.md in source: $1"
-    [ -d "$1/agents" ] || die "missing agents/ in source: $1"
     [ -d "$1/skills" ] || die "missing skills/ in source: $1"
 }
 
@@ -169,55 +171,6 @@ install_tree() {
     done
 }
 
-register_agents() {
-    source_agents=$1
-    codex_home=$2
-    config_file=$codex_home/config.toml
-
-    if [ ! -e "$config_file" ]; then
-        : >"$config_file"
-    elif [ ! -f "$config_file" ] || [ -L "$config_file" ]; then
-        log "skip agent registration: config is not a regular file: $config_file"
-        skipped_count=$((skipped_count + 1))
-        return
-    fi
-
-    for agent_file in "$source_agents"/*.toml; do
-        [ -f "$agent_file" ] || continue
-
-        agent_name=$(sed -n 's/^name = "\([a-z0-9-][a-z0-9-]*\)"$/\1/p' "$agent_file")
-        agent_description=$(sed -n 's/^description = \(".*"\)$/\1/p' "$agent_file")
-
-        if [ -z "$agent_name" ] || [ -z "$agent_description" ]; then
-            log "skip agent registration: missing simple name or description in $agent_file"
-            skipped_count=$((skipped_count + 1))
-            continue
-        fi
-
-        section="[agents.$agent_name]"
-        if awk -v section="$section" '$0 == section { found = 1 } END { exit !found }' "$config_file"; then
-            log "unchanged agent registration: $agent_name"
-            unchanged_count=$((unchanged_count + 1))
-            continue
-        fi
-
-        agent_filename=${agent_file##*/}
-        if [ ! -f "$codex_home/agents/$agent_filename" ]; then
-            log "skip agent registration: installed file is unavailable: $codex_home/agents/$agent_filename"
-            skipped_count=$((skipped_count + 1))
-            continue
-        fi
-
-        {
-            printf '\n%s\n' "$section"
-            printf 'description = %s\n' "$agent_description"
-            printf 'config_file = "agents/%s"\n' "$agent_filename"
-        } >>"$config_file"
-        log "registered agent: $agent_name"
-        installed_count=$((installed_count + 1))
-    done
-}
-
 main() {
     case ${1:-} in
         -h|--help)
@@ -232,7 +185,15 @@ main() {
             ;;
     esac
 
-    codex_home=$(resolve_codex_home)
+    agents_home=$(resolve_agents_home)
+
+    codex_home=
+    if [ -n "${CODEX_HOME:-}" ]; then
+        codex_home=$CODEX_HOME
+    elif [ -n "${HOME:-}" ] && [ -d "$HOME/.codex" ]; then
+        codex_home=$HOME/.codex
+    fi
+
     find_local_source
     if [ -z "$SOURCE_DIR" ]; then
         clone_source
@@ -240,12 +201,14 @@ main() {
 
     validate_source "$SOURCE_DIR"
 
-    mkdir -p "$codex_home" "$codex_home/agents" "$codex_home/skills"
+    mkdir -p "$agents_home" "$agents_home/skills"
 
-    install_file "$SOURCE_DIR/AGENTS.md" "$codex_home/AGENTS.md" AGENTS.md
-    install_tree "$SOURCE_DIR/agents" "$codex_home/agents" agents
-    install_tree "$SOURCE_DIR/skills" "$codex_home/skills" skills
-    register_agents "$SOURCE_DIR/agents" "$codex_home"
+    install_file "$SOURCE_DIR/AGENTS.md" "$agents_home/AGENTS.md" AGENTS.md
+    install_tree "$SOURCE_DIR/skills" "$agents_home/skills" skills
+
+    if [ -n "$codex_home" ]; then
+        install_file "$SOURCE_DIR/AGENTS.md" "$codex_home/AGENTS.md" "AGENTS.md (codex)"
+    fi
 
     log "Done. Installed: $installed_count. Updated: $updated_count. Unchanged: $unchanged_count. Skipped: $skipped_count."
 }

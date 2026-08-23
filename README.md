@@ -1,11 +1,12 @@
-# Codex Profile
+# Agent Profile
 
-This repository is laid out like a Codex home directory. It tracks only the
-portable configuration that should be shared:
+This repository tracks the portable configuration shared between coding agents:
 
 - `AGENTS.md`: global working instructions.
-- `agents/`: sub-agent definitions.
-- `skills/`: Codex skills.
+- `skills/`: agent skills.
+
+The profile installs to `~/.agents`.
+`AGENTS.md` is additionally installed into the Codex home when one exists.
 
 Local runtime state, credentials, logs, history, SQLite databases, sessions, and
 machine-specific config are intentionally ignored.
@@ -35,7 +36,7 @@ It is opinionated about a few recurring Codex failure modes:
   tends to keep tests that only proved a temporary reuse path, old wiring, or an
   intermediate TDD step. This profile treats tests as protection for the current
   contract and asks agents to delete or rewrite stale tests.
-- Review that only checks correctness bugs: the bundled `codex-review` skill was
+- Review that only checks correctness bugs: the bundled `code-review` skill was
   tightened to also look for material implementation concerns such as
   over-abstraction, duplicate state, unnecessary API surface, and avoidable
   common-case cost.
@@ -57,16 +58,17 @@ and more like a careful engineer optimizing for the final code shape.
 
 ## Install or Update
 
-Install or update `${CODEX_HOME:-$HOME/.codex}` with one command:
+Install or update `${AGENTS_HOME:-$HOME/.agents}` with one command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Lloyd-Pottiger/codex-profile/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Lloyd-Pottiger/agent-profile/main/install.sh | sh
 ```
 
 The installer adds missing files and updates existing profile files in place.
-Files that exist only in the destination are kept.
-It also registers installed `agents/*.toml` files in `config.toml`; existing
-agent registration sections are preserved.
+Files that exist only in the destination are kept. When a Codex home exists
+(`${CODEX_HOME:-$HOME/.codex}`), `AGENTS.md` and the agents are also installed
+there — the agents converted to TOML and registered in its `config.toml`.
+Skills need no Codex copy: Codex reads `~/.agents/skills` directly.
 
 From a local checkout, run:
 
@@ -74,10 +76,10 @@ From a local checkout, run:
 ./install.sh
 ```
 
-To install into a custom Codex home:
+To install into a custom location:
 
 ```bash
-CODEX_HOME=/path/to/.codex ./install.sh
+AGENTS_HOME=/path/to/.agents ./install.sh
 ```
 
 ## Repository Layout
@@ -86,7 +88,6 @@ CODEX_HOME=/path/to/.codex ./install.sh
 .
 ├── AGENTS.md
 ├── install.sh
-├── agents/
 ├── skills/
 ├── LICENSE
 └── README.md
@@ -102,10 +103,6 @@ Some skills are adapted from:
 Recommended companion projects:
 
 - CodexPotter: https://github.com/breezewish/CodexPotter/tree/v2
-
-Agents are adapted from:
-
-- https://github.com/VoltAgent/awesome-codex-subagents
 
 ## License
 

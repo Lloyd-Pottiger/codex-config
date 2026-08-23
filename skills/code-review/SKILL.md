@@ -1,28 +1,25 @@
 ---
-name: codex-review
-description: Review a stable branch, commit, PR, or working-tree change with an independent Codex CLI against both repository standards and the originating spec. Use when explicitly invoked as $codex-review, when asked for a deep or second-pass review, or as the final review phase after substantial implementation; after starting the script, wait for it to exit before triage or a final response.
+name: code-review
+description: Review a stable branch, commit, PR, or working-tree change with an independent reviewer subagent in a fresh context, against both repository standards and the originating spec. Use when explicitly invoked, when asked for a deep or second-pass review, or as the final review phase after substantial implementation.
 ---
 
-# Codex Review
+# Code Review
 
-Launch a separate Codex reviewer through `scripts/review.js` and wait for it to complete. The fresh reviewer owns evidence discovery and review; the main agent verifies and triages its result only after the script exits.
+Dispatch a dedicated reviewer subagent and wait for its result. The fresh reviewer owns evidence discovery and review; the main agent verifies and triages its result only after the reviewer returns. The delegation exists for the fresh context: the reviewer sees only the review brief, not the conversation that produced the code.
 
-## Synchronous Execution Rule
+## Fresh Context Rule
 
-`scripts/review.js` is a foreground process: it runs to completion and then exits. After starting it, the active task is waiting for that exit.
-
-- Do not run a separate manual review while the script is still running.
+- Dispatch exactly one reviewer per review scope and let it finish before triage.
+- Do not run a separate manual review while the reviewer is still running.
 - Do not inspect the diff in parallel as a substitute for waiting.
-- Do not produce findings, a final answer, or a review summary until the script exits.
-- If your harness exposes the running command as a pollable task, check it roughly every 5 minutes for new progress output — but treat each check as a status peek, not permission to start other review work.
-- While waiting, send only brief progress updates to the user when new output appears or the user asks for status.
-- If the user asks for status, report whether the script is still running, then keep waiting unless the user explicitly tells you to stop.
+- Do not produce findings, a final answer, or a review summary until the reviewer returns.
+- While waiting, send brief progress updates only when the user asks for status.
 
 ## Fit
 
 Use this skill when:
 
-- The user explicitly invokes `$codex-review` or asks for a deep review.
+- The user explicitly invokes this skill or asks for a deep, independent review.
 - The change is non-trivial, high-risk, production-critical, or performance-sensitive.
 - A substantial implementation is complete and needs a final independent review pass.
 
@@ -46,25 +43,21 @@ Review code changes for commit range <sha1>..<sha2>
 Review <specific path/module/feature> for <specific risk or behavior>
 ```
 
-Resolve every named ref before starting. For a branch or tag, review against its merge-base with `HEAD`; for an explicit commit range, preserve the requested endpoints. For current changes, include staged, unstaged, and untracked files. Stop before launching the reviewer if the ref is invalid, the selected diff is empty, or the scope remains ambiguous after inspecting the repository.
+Resolve every named ref before dispatching. For a branch or tag, review against its merge-base with `HEAD`; for an explicit commit range, preserve the requested endpoints. For current changes, include staged, unstaged, and untracked files. Stop before dispatching if the ref is invalid, the selected diff is empty, or the scope remains ambiguous after inspecting the repository.
 
 2. Pass known evidence sources.
 
-Include any user-supplied issue, PRD, spec, acceptance criteria, or standards paths in the review prompt. Do not invent a spec when none is known; the independent reviewer will discover repository-backed sources and report when no spec is available.
+Include any user-supplied issue, PRD, spec, acceptance criteria, or standards paths in the review request. Do not invent a spec when none is known; the reviewer will discover repository-backed sources and report when no spec is available.
 
-3. Run the review script in the foreground.
+3. Dispatch the reviewer subagent.
 
-```shell
-node <skill-directory>/scripts/review.js --cwd "<project directory>" "<review prompt>"
-```
+Read `references/review-brief.md` in this skill's directory. Dispatch the review to a subagent — the host's reviewer-type agent when one is available, otherwise a general-purpose subagent. The task prompt is the full brief followed by a `## Review request` section holding the pinned review prompt and any known evidence sources. Give the reviewer nothing beyond that prompt: the fresh context is the point.
 
-`scripts/review.js` lives inside this skill directory, not inside the project being reviewed. The review may take a long time; let it run until it exits. Do not append `&`, do not detach it, and do not move on to another review path while it is active.
+4. Wait for the reviewer to return.
 
-4. Monitor progress.
+A foreground dispatch blocks until the reviewer finishes. Do only non-conflicting work while waiting, and do not treat a long review as stuck; a production-critical review of a large change can take many minutes.
 
-The script buffers progress and emits the final Markdown when it exits. If the harness hands back a pollable handle for the running command, peek at it about every 5 minutes for new buffered output; otherwise simply wait for the process to exit. If a check returns no new output, keep waiting quietly. Do not treat the review as stuck until there has been no progress for more than 30 minutes.
-
-5. After the script exits, triage the result before answering the user.
+5. Triage the result before answering the user.
 
 - Verify each reported finding and implementation concern against the diff and surrounding code.
 - Drop clear false positives and speculative redesign suggestions instead of forwarding them blindly.
@@ -105,5 +98,4 @@ The delegated reviewer is instructed to perform a production-critical review:
 - Run this at most once for a given review scope unless the code changed substantially after the run.
 - Do not use this as a lint replacement.
 - Do not ask the delegated reviewer to edit files.
-- Do not call the script "background" work; it is the foreground review task until it exits.
-- If the script exits unsuccessfully, report the failure and the visible output; do not fabricate review results.
+- If the dispatch fails or the reviewer returns without completing the review, report the failure and the visible output; do not fabricate review results.
