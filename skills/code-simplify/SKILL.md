@@ -43,7 +43,6 @@ If no language-specific coder skill exists, still follow this cleanup workflow a
    - If `git diff --cached` is non-empty, use `git diff HEAD` so staged and unstaged edits are both visible.
    - If there is no diff, review the most recently modified files the user mentioned or you touched earlier in the conversation. If there is still no clear target, ask which files to simplify.
 2. Launch three review agents in parallel and give each the full diff.
-   - In Codex, use one `multi_tool_use.parallel` call that wraps three `spawn_agent` calls.
    - Agent 1: reuse review - search nearby modules, packages, shared helper/util directories, existing types, constants, and APIs that replace new code.
    - Agent 2: quality review - find derived or cached state that could be computed directly, parameter sprawl, copy-paste variants, leaky abstractions, stringly-typed inputs where constants/enums/typed wrappers already exist, and unnecessary comments.
    - Agent 3: efficiency review - find extra allocations or copies, repeated parsing or lookups, hot-path bloat, broad scans, TOCTOU pre-checks, lock contention, concurrency that does needless work, unconditional no-op updates, unbounded structures, or missing cleanup.
