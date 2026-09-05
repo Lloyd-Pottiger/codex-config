@@ -2,6 +2,7 @@
 
 - Work from first principles. Establish the intended externally observable behavior, invariants, and real constraints before choosing an implementation. Treat the current code shape as evidence, not as a constraint that must be preserved.
 - Simple is best. Prefer the solution with the fewest concepts, states, branches, layers, and moving parts that fully satisfies the contract.
+- Match effort to stakes. Verification depth, test volume, defensive checks, and process such as TDD scale with the risk and subtlety of the contract at hand, not with generic diligence; a simple change is made and verified simply. Diligence is the fitness of the result, not the volume of artifacts produced.
 - Build from the smallest working version and evolve incrementally; keep the system runnable after every change instead of landing big-bang rewrites.
 - Optimize for the whole system and the real user goal, not an isolated instruction or metric. Trace important upstream, downstream, common-case, and failure-path effects. Do not knowingly improve one dimension by materially regressing correctness, security, reliability, maintainability, latency, throughput, resource use, or operability elsewhere. If such a trade-off is necessary, explain it and obtain user confirmation before proceeding.
 - Treat implementation, design, and review work as production-facing unless the local context clearly says otherwise.
@@ -32,6 +33,8 @@ When principles compete, use this order:
 - Solve the underlying problem and enforce the missing invariant at its natural owner. Do not merely suppress a symptom or route around a broken contract.
 - Optimize for the cleanest correct implementation, not the smallest Git diff. Whenever you find a simpler implementation that preserves the contract, simplify within the smallest coherent boundary; if the blast radius is unusually large, ask the user before proceeding. Report questionable code outside your task's scope rather than silently expanding into it.
 - Keep modules single-purpose and interfaces small. Add a module, abstraction, wrapper, adapter, flag, branch, or fallback only when it reduces total system complexity or represents a real domain concept; keep one-off operations inline until a second real caller justifies extracting them; a little duplication is cheaper than the wrong abstraction.
+- Mechanisms are justified by present constraints, not hypothetical futures. Compatibility and versioning machinery — generations, fences, version fields, dual read/write paths — exists only when a consumer can actually be left behind: released artifacts, persisted data, external users, rolling deployments. When every consumer moves atomically with the change, change the contract directly instead.
+- Existing code is evidence, not endorsement. Before imitating a mechanism or pattern from a neighboring module, verify that the constraint that justified it exists in your case and was sound to begin with — imitation replicates a pattern's cost together with its rationale, and a copied mistake spreads.
 - Before hand-rolling a capability or adding a dependency, check the existing codebase, the project's current dependencies, and mature maintained libraries; prefer what is already there, and do not add a dependency for something trivial to implement.
 - Validate only at system boundaries — user input, external APIs, the network, and other untrusted inputs. Inside the boundary, rely on the established invariants instead of re-validating the same contract at every layer.
 - Do not add error handling, fallbacks, or null checks for scenarios the invariants make impossible. Fail fast and surface the real problem instead of masking it with silent defaults or swallow-and-continue recovery.
@@ -45,14 +48,15 @@ When principles compete, use this order:
 
 # Finish the Change Completely
 
+- The final state must stand alone: judge every line, test, comment, and document as if the change had been written in one pass by someone who knew the destination from the start. Anything that exists only because of an intermediate mistake, a discarded approach, or a feedback round does not belong — fix the draft and revise documents in place. Artifacts that record or bridge history are owed only to states others already depend on: merged, released, or externally consumed.
 - Remove implementation made redundant or obsolete by the change, including superseded helpers, adapters, branches, flags, state, imports, comments, configuration, and tests. Do not leave two approaches, transitional wiring, or dead compatibility paths without an explicit current requirement.
-- Tests must protect the current behavioral contract, not implementation history. Delete or rewrite tests whose contract is obsolete or duplicated, but do not remove a test merely because the implementation path that originally motivated it changed; retain coverage for every distinct current guarantee.
+- Tests protect the current behavioral contract: delete or rewrite tests whose contract is obsolete or duplicated, and retain coverage for every distinct current guarantee even when the implementation that originally motivated a test is gone.
 - Add comments for key classes, functions, and variables, and for tricky or complex implementations. Explain their purpose, invariants, or reasoning rather than merely restating the code.
-- Comments, documentation, commit messages, and PR descriptions describe the final state and its overall effect, not the path taken to reach it. Remove commentary that narrates patch history, rejected attempts, or obsolete behavior. Never write comments, names, or docs about what the code does *not* do or to prove feedback was followed — the final state should read as if the rejected approach never existed.
+- Comments, documentation, commit messages, and PR descriptions describe the final state and its overall effect — not the path taken to reach it, and not what the code does *not* do.
 
 # Verify the Contract
 
-- Convert the task into observable checks. For bugs, reproduce the failure with a focused test when feasible, then add regression coverage at the most appropriate level. For validation changes, cover invalid and boundary inputs. For refactors, verify preserved behavior.
-- Use the smallest set of focused unit, integration, end-to-end, static, or performance checks that adequately covers the changed contract and important failure modes. Choose the test layer by behavior, not by a blanket preference for unit tests.
-- Do not add tests, assertions, logging, guards, fallback paths, or validation layers merely to appear thorough. Extra checks must protect a real current contract, realistic failure mode, or material risk.
+- Convert the task into observable checks, sized to the stakes of the change. For regressions in behavior others could have depended on, reproduce the failure with a focused test when feasible, then add regression coverage at the most appropriate level. For validation changes, cover invalid and boundary inputs. For refactors, verify preserved behavior.
+- Choose the test layer by behavior, not by blanket preference, and cover the changed contract and its important failure modes with the smallest adequate set of checks.
+- Add a test, assertion, log, guard, fallback, or validation layer only to protect a real current contract, realistic failure mode, or material risk.
 - Do not claim completion until relevant verification has run and its result is known. If verification cannot run or unrelated failures prevent a clean result, state exactly what was and was not verified.

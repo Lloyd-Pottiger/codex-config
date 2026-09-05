@@ -23,6 +23,17 @@ It is opinionated about a few recurring Codex failure modes:
   fallback, rule, or exception. This profile treats non-trivial feedback as
   evidence about the desired outcome, re-derives the simplest coherent
   end-state, and only then minimizes diff size.
+- Speculative compatibility machinery: Codex can add generations, fences,
+  version fields, or dual read/write paths even when no consumer can be left
+  behind by the change. This profile treats such mechanisms as justified only
+  by present constraints — released artifacts, persisted data, external users,
+  rolling deployments — and changes the contract directly when every consumer
+  moves atomically with it.
+- Imitating neighboring code without checking its rationale: Codex often
+  copies a mechanism or pattern from a nearby module without verifying that
+  the constraint that justified it exists in the new case, or was sound at
+  all — so a copied mistake spreads. This profile treats existing code as
+  evidence, not endorsement.
 - Unbounded refactors in the wrong direction: Codex can either avoid needed
   restructuring and keep stacking patches, or use a small task as an excuse for
   a broad cleanup. This profile tries to hold a middle line: allow refactoring
@@ -36,6 +47,12 @@ It is opinionated about a few recurring Codex failure modes:
   tends to keep tests that only proved a temporary reuse path, old wiring, or an
   intermediate TDD step. This profile treats tests as protection for the current
   contract and asks agents to delete or rewrite stale tests.
+- Uniform diligence regardless of stakes: Codex tends to give a trivial change
+  the same verification depth, test volume, defensive checks, and process (such
+  as TDD) as a risky one, producing ceremony instead of confidence. This
+  profile scales effort with the risk and subtlety of the contract and
+  measures diligence by the fitness of the result, not the volume of
+  artifacts produced.
 - Review that only checks correctness bugs: the bundled `code-review` skill was
   tightened to also look for material implementation concerns such as
   over-abstraction, duplicate state, unnecessary API surface, and avoidable
